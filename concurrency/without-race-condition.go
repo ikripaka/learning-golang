@@ -2,33 +2,28 @@ package main
 
 import (
 	"fmt"
-	//"math/rand"
-	//"time"
-
-	//"time"
+	"sync"
 )
 
-var counter int
+var counterMutex sync.Mutex
 
 func main() {
-	//rand.Seed(time.Now().UnixNano())
-	//var waitGroup sync.WaitGroup
-
-	//waitGroup.Add(20)
+	var counter int
 	channel := make(chan int)
-	go increment("<1>", channel)
-	go increment("<2>", channel)
+	go incrementWithMutex("<1>", channel, &counter)
+	go incrementWithMutex("<2>", channel, &counter)
 	if (<-channel + <-channel) == 2 {
 		fmt.Println("Counter: ", counter)
 		close(channel)
 	}
 }
 
-func increment(processName string, channel chan int ) {
+func incrementWithMutex(processName string, channel chan int, counter *int) {
 	for i := 0; i < 1000000; i++ {
-		counter++
-		fmt.Println(processName, "|Iteration:", i, "|Counter:", counter)
+		counterMutex.Lock()
+		*counter++
+		counterMutex.Unlock()
+		fmt.Println(processName, "|Iteration:", i, "|Counter:", &counter)
 	}
-	fmt.Print("")
 	channel <- 1
 }

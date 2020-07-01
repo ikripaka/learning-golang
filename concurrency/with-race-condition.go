@@ -2,28 +2,29 @@ package main
 
 import (
 	"fmt"
-	"sync"
+	//"math/rand"
+	//"time"
+
+	//"time"
 )
 
-var counterMutex sync.Mutex
-var counter int
 
 func main() {
+	var counter int
 	channel := make(chan int)
-	go increment("<1>", channel)
-	go increment("<2>", channel)
+	go increment("<1>", channel, &counter)
+	go increment("<2>", channel, &counter)
 	if (<-channel + <-channel) == 2 {
 		fmt.Println("Counter: ", counter)
 		close(channel)
 	}
 }
 
-func increment(processName string, channel chan int) {
+func increment(processName string, channel chan int, counter *int) {
 	for i := 0; i < 1000000; i++ {
-		counterMutex.Lock()
-		counter++
-		counterMutex.Unlock()
-		fmt.Println(processName, "|Iteration:", i, "|Counter:", counter)
+		*counter++
+		fmt.Println(processName, "|Iteration:", i, "|Counter:", &counter)
 	}
+	fmt.Print("")
 	channel <- 1
 }
