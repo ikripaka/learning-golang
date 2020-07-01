@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 )
 
-func IncrementWithMutex(processName string, counter *int32, channel chan int, counterMutex *sync.Mutex) {
+func IncrementWithMutex(processName string, counter *int32, waitGroup *sync.WaitGroup, counterMutex *sync.Mutex) {
 	for i := 0; i < 1000000; i++ {
 		counterMutex.Lock()
 		*counter++
 		counterMutex.Unlock()
 	}
-	channel <- 1
+	waitGroup.Done()
 
 }
 func IncrementWithAtomic(processName string,channel chan int, counter *int32) {
