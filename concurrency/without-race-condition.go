@@ -15,8 +15,8 @@ func main() {
 	timeBefore := time.Now()
 	go incrementWithMutex("<1>", channel, &counter)
 	go incrementWithMutex("<2>", channel, &counter)
-//	go incrementWithAtomic("<2>", channel, &counter)
-//	go incrementWithAtomic("<2>", channel, &counter)
+	//go incrementWithAtomic("<2>", channel, &counter)
+	//go incrementWithAtomic("<2>", channel, &counter)
 
 	if (<-channel + <-channel) == 2 {
 		fmt.Println("Counter: ", counter, "Time:", time.Now().Sub(timeBefore))
@@ -25,7 +25,7 @@ func main() {
 }
 
 func incrementWithMutex(processName string, channel chan int, counter *int32) {
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 250000000; i++ {
 		counterMutex.Lock()
 		*counter++
 		counterMutex.Unlock()
@@ -35,7 +35,7 @@ func incrementWithMutex(processName string, channel chan int, counter *int32) {
 }
 
 func incrementWithAtomic(processName string, channel chan int, counter *int32) {
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 250000000; i++ {
 		atomic.AddInt32(counter, 1)
 		//fmt.Println(processName, "|Iteration:", i, "|Counter:", &counter)
 	}

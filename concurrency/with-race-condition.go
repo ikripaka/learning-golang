@@ -15,7 +15,6 @@ func main() {
 	channel := make(chan int)
 	timeBefore := time.Now()
 	counter++
-	fmt.Println(counter)
 	go increment("<1>", channel, &counter)
 	go increment("<2>", channel, &counter)
 	if (<-channel + <-channel) == 2 {
@@ -25,7 +24,7 @@ func main() {
 }
 
 func increment(processName string, channel chan int, counter *int) {
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 250000000; i++ {
 		*counter++
 		//fmt.Println(processName, "|Iteration:", i, "|Counter:", *counter)
 	}
