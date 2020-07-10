@@ -33,6 +33,7 @@ func ReadPictureUrls( filePath string) chan string {
 			log.Fatal(err)
 		}
 	}
+	close(urlsChannel)
 	return urlsChannel
 
 }

@@ -10,13 +10,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-func LoadPictures(folderPath string, urlsChannel chan string) {
+const TopValueForGeneratingIndividualNamesForNewImages = 1024
+
+func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenames chan string,
+	waitGroup *sync.WaitGroup) {
 	url, isChannelEmpty := <-urlsChannel
 	for isChannelEmpty {
-		filename := getFilename(url, cap(urlsChannel))
+		filename := getFilename(folderPath, url, channelWithFilenames)
 
 		response, err := http.Get(url)
 		if err != nil {
@@ -43,21 +47,36 @@ func LoadPictures(folderPath string, urlsChannel chan string) {
 			out.Close()
 		}
 		url, isChannelEmpty = <-urlsChannel
-		fmt.Println(url, isChannelEmpty)
 	}
-	fmt.Println("finish")
+	waitGroup.Done()
 }
 
 // Gets filename for file (from url/individual name)
-func getFilename(url string, channelCapacity int) string {
+func getFilename(folderPath string, url string, filenameChannel chan string) string {
 	rand.Seed(time.Now().UnixNano())
 	var regExpForFilename = regexp.MustCompile(`(?:[^/][-\w\.]+)+$`)
 	var regExpForFileExtension = regexp.MustCompile(`(((-|\w)+)\.(jpg|png))$`)
-	splitLineBySlash :=strings.Split(url,`/`)
-	if regExpForFilename.MatchString(url) && regExpForFileExtension.MatchString(splitLineBySlash[cap(splitLineBySlash)-1]){
-		fmt.Println(regExpForFilename.FindString(url))
-		return regExpForFilename.FindString(url)
+	splitLineBySlash := strings.Split(url, `/`)
+
+	if regExpForFilename.MatchString(url) &&
+		regExpForFileExtension.MatchString(splitLineBySlash[cap(splitLineBySlash)-1]) {
+		filename := regExpForFilename.FindString(url)
+
+		if _, err := os.Stat(folderPath + `\` + filename); err == nil {
+			regexMath :=
+				regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(splitLineBySlash[cap(splitLineBySlash)-1])
+			filename = regexMath[cap(regexMath)-2] + " (" +
+				strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" +
+				regexMath[cap(regexMath)-1]
+		}
+		filenameChannel <- filename
+		fmt.Println( filename)
+		return filename
 	}
-	fmt.Println("Picture_№_" + strconv.Itoa(rand.Intn(1024)) + `.jpg`)
-	return "Picture_№_" + strconv.Itoa(rand.Intn(1024)) + `.jpg`
+
+	filename := "Picture_№_" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + `.jpg`
+	fmt.Println(filename)
+	filenameChannel <- filename
+	return filename
+
 }
