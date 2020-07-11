@@ -16,6 +16,10 @@ import (
 
 const TopValueForGeneratingIndividualNamesForNewImages = 1024
 
+// Loads pictures from the internet, using urls from the file
+// folderPath - path to the folder where images would be saved
+// urlsChannel - channel with urls
+// channelWithFilenames - channel with filenames that would be save file names
 func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenames chan string,
 	waitGroup *sync.WaitGroup) {
 	url, isChannelEmpty := <-urlsChannel
@@ -29,8 +33,15 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 			if err != nil {
 				log.Fatal(err)
 			}
-			response.Body.Close()
-			out.Close()
+			err = out.Close()
+			if err != nil{
+				log.Println("Error in out.Close()", filename)
+			}
+
+			err = response.Body.Close()
+			if err != nil {
+				log.Println("Error in response.Body.Close() ", filename)
+			}
 
 		} else {
 
@@ -43,8 +54,16 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 			if err != nil {
 				log.Fatal(err)
 			}
-			response.Body.Close()
-			out.Close()
+
+			err = out.Close()
+			if err != nil{
+				log.Println("Error in out.Close()", filename)
+			}
+
+			err = response.Body.Close()
+			if err != nil {
+				log.Println("Error in response.Body.Close() ", filename)
+			}
 		}
 		url, isChannelEmpty = <-urlsChannel
 	}
@@ -52,6 +71,9 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 }
 
 // Gets filename for file (from url/individual name)
+// folderPath - folder path for correct path to the file
+// url - url from what extracts filename
+// filenameChannel - channel with filenames
 func getFilename(folderPath string, url string, filenameChannel chan string) string {
 	rand.Seed(time.Now().UnixNano())
 	var regExpForFilename = regexp.MustCompile(`(?:[^/][-\w\.]+)+$`)
@@ -70,7 +92,7 @@ func getFilename(folderPath string, url string, filenameChannel chan string) str
 				regexMath[cap(regexMath)-1]
 		}
 		filenameChannel <- filename
-		fmt.Println( filename)
+		fmt.Println(filename)
 		return filename
 	}
 

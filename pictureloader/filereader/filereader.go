@@ -3,17 +3,16 @@ package filereader
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"os"
 )
 
-//Reads file with urls and pushes them to the buffered channel
+// Reads file with urls and pushes them to the buffered channel
+// filePath - path to file that contain urls
 func ReadPictureUrls( filePath string) chan string {
 	channelCapacity, err:=  countLines(filePath)
 	urlsChannel := make (chan string , channelCapacity)
-	fmt.Println(cap(urlsChannel))
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -26,7 +25,6 @@ func ReadPictureUrls( filePath string) chan string {
 	}()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		fmt.Println("read: ", scanner.Text())
 		urlsChannel <- scanner.Text()
 		err = scanner.Err()
 		if err != nil {
@@ -38,7 +36,8 @@ func ReadPictureUrls( filePath string) chan string {
 
 }
 
-//Counts file lines for creating buffered channel
+// Counts file lines for creating buffered channel
+// filePath - path to file to count lines in file
 func countLines(filePath string) (int, error) {
 	reader, err := os.Open(filePath)
 	if err != nil{
