@@ -1,4 +1,4 @@
-package filereader
+package main
 
 import (
 	"bufio"
@@ -10,9 +10,9 @@ import (
 
 // Reads file with urls and pushes them to the buffered channel
 // filePath - path to file that contain urls
-func ReadPictureUrls( filePath string) chan string {
-	channelCapacity, err:=  countLines(filePath)
-	urlsChannel := make (chan string , channelCapacity)
+func ReadPictureUrls(filePath string) chan string {
+	channelCapacity, err := countLines(filePath)
+	urlsChannel := make(chan string, channelCapacity)
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -40,7 +40,7 @@ func ReadPictureUrls( filePath string) chan string {
 // filePath - path to file to count lines in file
 func countLines(filePath string) (int, error) {
 	reader, err := os.Open(filePath)
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 	var count int
@@ -65,5 +65,5 @@ func countLines(filePath string) (int, error) {
 			break
 		}
 	}
-	return count+1, nil
+	return count + 1, nil
 }

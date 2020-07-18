@@ -1,9 +1,8 @@
-package image_reducer
+package main
 
 import (
 	"bufio"
 	"fmt"
-	imageLoader "github.com/ikripaka/learning-golang/pictureloader/image-loader"
 	"github.com/nfnt/resize"
 	"image"
 	"image/jpeg"
@@ -123,7 +122,7 @@ func getFilename(folderPath string, filename string) string {
 		return regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 	}
 
-	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(imageLoader.TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
+	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
 	fmt.Println(filename)
 	return filename
 }

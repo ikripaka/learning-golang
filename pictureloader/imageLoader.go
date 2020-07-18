@@ -1,4 +1,4 @@
-package image_loader
+package main
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 				log.Fatal(err)
 			}
 			err = out.Close()
-			if err != nil{
+			if err != nil {
 				log.Println("Error in out.Close()", filename)
 			}
 
@@ -56,7 +56,7 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 			}
 
 			err = out.Close()
-			if err != nil{
+			if err != nil {
 				log.Println("Error in out.Close()", filename)
 			}
 
