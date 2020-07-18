@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"runtime"
 	"sync"
 )
@@ -23,13 +22,15 @@ func init() {
 
 const MAXDOWNLOADPROCESSES = 15
 
+// E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files
 func main() {
 	numCPU := runtime.NumCPU()
 
-	args := os.Args[1:]
-	urlFilePath := args[0]
-	folderPath := args[1]
-
+	//args := os.Args[1:]
+	//urlFilePath := args[0]
+	//folderPath := args[1]
+	urlFilePath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt`
+	folderPath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files`
 	if _, err := IsPathsCorrect(urlFilePath, folderPath); err != nil {
 		log.Fatal(err)
 	}
@@ -37,13 +38,16 @@ func main() {
 	var waitGroup sync.WaitGroup
 	fmt.Println("Read urls from file..")
 
-	pictureUrls := ReadPictureUrls(args[0])
-	channelWithFilenames := make(chan string, cap(pictureUrls))
+	pictureUrls := make(chan string)
+
+	go ReadPictureUrls(urlFilePath, pictureUrls)
+
+	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(args[1], pictureUrls, channelWithFilenames, &waitGroup)
+		go LoadPictures(urlFilePath, pictureUrls, channelWithFilenames, &waitGroup)
 	}
 	waitGroup.Wait()
 	close(channelWithFilenames)
@@ -51,7 +55,7 @@ func main() {
 
 	fmt.Println("Scale images..")
 	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(args[1], channelWithFilenames, &waitGroup)
+		go MakeAvatars(urlFilePath, channelWithFilenames, &waitGroup)
 	}
 	waitGroup.Wait()
 

@@ -10,9 +10,7 @@ import (
 
 // Reads file with urls and pushes them to the buffered channel
 // filePath - path to file that contain urls
-func ReadPictureUrls(filePath string) chan string {
-	channelCapacity, err := countLines(filePath)
-	urlsChannel := make(chan string, channelCapacity)
+func ReadPictureUrls(filePath string, chanWithUrls chan string) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -25,14 +23,13 @@ func ReadPictureUrls(filePath string) chan string {
 	}()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		urlsChannel <- scanner.Text()
+		chanWithUrls <- scanner.Text()
 		err = scanner.Err()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	close(urlsChannel)
-	return urlsChannel
+	close(chanWithUrls)
 
 }
 

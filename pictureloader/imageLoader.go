@@ -24,7 +24,7 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 	waitGroup *sync.WaitGroup) {
 	url, isChannelEmpty := <-urlsChannel
 	for isChannelEmpty {
-		filename := getFilename(folderPath, url, channelWithFilenames)
+		filename := getFilenameForDownloadedImages(folderPath, url, channelWithFilenames)
 
 		response, err := http.Get(url)
 		if err != nil {
@@ -74,7 +74,7 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 // folderPath - folder path for correct path to the file
 // url - url from what extracts filename
 // filenameChannel - channel with filenames
-func getFilename(folderPath string, url string, filenameChannel chan string) string {
+func getFilenameForDownloadedImages(folderPath string, url string, filenameChannel chan string) string {
 	rand.Seed(time.Now().UnixNano())
 	var regExpForFilename = regexp.MustCompile(`(?:[^/][-\w\.]+)+$`)
 	var regExpForFileExtension = regexp.MustCompile(`(((-|\w)+)\.(jpg|png))$`)

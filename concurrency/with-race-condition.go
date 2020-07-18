@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"time"
-
 	//"math/rand"
 	//"time"
-
 	//"time"
 )
 

@@ -70,7 +70,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 
 			resizedImg := resize.Resize(width, height, decodedImage, resize.MitchellNetravali)
 
-			newFilename := getFilename(folderPath, imgFilename)
+			newFilename := getFilenameForAvatars(folderPath, imgFilename)
 			outputFile, err := os.Create(folderPath + `\` + newFilename)
 
 			if err != nil {
@@ -111,7 +111,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 // Adds to the filename '(avatar)' or if file exists gives different name
 // folderPath - path where scaled images would be stored
 // filename - file name
-func getFilename(folderPath string, filename string) string {
+func getFilenameForAvatars(folderPath string, filename string) string {
 
 	rand.Seed(time.Now().UnixNano())
 	regexMath := regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(filename)
