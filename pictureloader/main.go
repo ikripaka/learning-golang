@@ -39,23 +39,23 @@ func main() {
 	fmt.Println("Read urls from file..")
 
 	pictureUrls := make(chan string)
-
-	go ReadPictureUrls(urlFilePath, pictureUrls)
+	waitGroup.Add(1)
+	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup)
 
 	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
+
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(urlFilePath, pictureUrls, channelWithFilenames, &waitGroup)
+		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup) //todo HERE NEED TO CLOSE CHANNEL
 	}
-	waitGroup.Wait()
-	close(channelWithFilenames)
+
 	waitGroup.Add(numCPU)
 
 	fmt.Println("Scale images..")
 	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(urlFilePath, channelWithFilenames, &waitGroup)
+		go MakeAvatars(folderPath, channelWithFilenames, &waitGroup)
 	}
 	waitGroup.Wait()
 

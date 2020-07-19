@@ -3,14 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"sync"
 )
 
 // Reads file with urls and pushes them to the buffered channel
 // filePath - path to file that contain urls
-func ReadPictureUrls(filePath string, chanWithUrls chan string) {
+func ReadPictureUrls(filePath string, chanWithUrls chan string, waitGroup *sync.WaitGroup) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -30,6 +32,8 @@ func ReadPictureUrls(filePath string, chanWithUrls chan string) {
 		}
 	}
 	close(chanWithUrls)
+	waitGroup.Done()
+	fmt.Println("done read -------")
 
 }
 

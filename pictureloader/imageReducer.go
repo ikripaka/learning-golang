@@ -32,8 +32,9 @@ const AvatarWidthSize = 64 //px
 // waitGroup - sync.WaitGroup that helps to handle goroutines
 func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup) {
 	for imgFilename, isEmpty := <-filenamesChannel; isEmpty; {
-		originalFile, err := os.Open(folderPath + `\` + imgFilename)
 
+		originalFile, err := os.Open(folderPath + `\` + imgFilename)
+		fmt.Println(isEmpty, imgFilename, "before")
 		if err != nil {
 			handleClosingErrInOriginalFile(originalFile)
 			log.Println("Can`t open image", imgFilename)
@@ -102,9 +103,13 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			err = outputFile.Close()
 
 		}
+
 		imgFilename, isEmpty = <-filenamesChannel
+		fmt.Println(isEmpty, imgFilename, "then")
+
 	}
 	waitGroup.Done()
+	fmt.Println("done reduce ------")
 }
 
 // Get'f filename depending on filename name
