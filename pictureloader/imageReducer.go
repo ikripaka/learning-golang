@@ -32,9 +32,8 @@ const AvatarWidthSize = 64 //px
 // waitGroup - sync.WaitGroup that helps to handle goroutines
 func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup, numOfPictures *int) {
 	for imgFilename, isEmpty := <-filenamesChannel; isEmpty; {
-
 		originalFile, err := os.Open(folderPath + `\` + imgFilename)
-		fmt.Println(isEmpty, imgFilename, "before")
+
 		if err != nil {
 			handleClosingErrInOriginalFile(originalFile)
 			log.Println("Can`t open image", imgFilename)
@@ -103,17 +102,18 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			err = outputFile.Close()
 
 		}
-
 		imgFilename, isEmpty = <-filenamesChannel
+<<<<<<< HEAD
 		fmt.Println(isEmpty, imgFilename, "then")
 
 		fmt.Println(numOfPictures)
 		*numOfPictures--
+=======
+>>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
 	}
 
 	fmt.Println(numOfPictures)
 	waitGroup.Done()
-	fmt.Println("done reduce ------")
 }
 
 // Get'f filename depending on filename name

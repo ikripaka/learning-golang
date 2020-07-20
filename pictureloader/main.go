@@ -40,21 +40,37 @@ func main() {
 	fmt.Println("Read urls from file..")
 
 	pictureUrls := make(chan string)
+<<<<<<< HEAD
 	waitGroup.Add(1)
 	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup, &numOfUrls)
+=======
+
+	go ReadPictureUrls(urlFilePath, pictureUrls)
+>>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
 
 	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
-
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
+<<<<<<< HEAD
 		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup)
 	}
 
 	for _, ok := <-channelWithFilenames; ok; {
 		//fmt.Println(ok, val)
 		_, ok = <-channelWithFilenames
+=======
+		go LoadPictures(urlFilePath, pictureUrls, channelWithFilenames, &waitGroup)
+	}
+	waitGroup.Wait()
+	close(channelWithFilenames)
+	waitGroup.Add(numCPU)
+
+	fmt.Println("Scale images..")
+	for i := 0; i < numCPU; i++ {
+		go MakeAvatars(urlFilePath, channelWithFilenames, &waitGroup)
+>>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
 	}
 	//waitGroup.Add(numCPU)
 	//
