@@ -24,7 +24,9 @@ const MAXDOWNLOADPROCESSES = 15
 
 // E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files
 func main() {
-	numCPU := runtime.NumCPU()
+	//numCPU := runtime.NumCPU()
+	var numOfUrls int
+	var waitGroup sync.WaitGroup
 
 	//args := os.Args[1:]
 	//urlFilePath := args[0]
@@ -35,12 +37,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var waitGroup sync.WaitGroup
 	fmt.Println("Read urls from file..")
 
 	pictureUrls := make(chan string)
 	waitGroup.Add(1)
-	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup)
+	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup, &numOfUrls)
 
 	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
@@ -48,15 +49,19 @@ func main() {
 	fmt.Println("Download images..")
 
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup) //todo HERE NEED TO CLOSE CHANNEL
+		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup)
 	}
 
-	waitGroup.Add(numCPU)
-
-	fmt.Println("Scale images..")
-	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(folderPath, channelWithFilenames, &waitGroup)
+	for _, ok := <-channelWithFilenames; ok; {
+		//fmt.Println(ok, val)
+		_, ok = <-channelWithFilenames
 	}
+	//waitGroup.Add(numCPU)
+	//
+	//fmt.Println("Scale images..")
+	//for i := 0; i < numCPU; i++ {
+	//	go MakeAvatars(folderPath, channelWithFilenames, &waitGroup, &numOfUrls)
+	//}
 	waitGroup.Wait()
 
 	fmt.Println("All is ready")

@@ -75,7 +75,7 @@ func LoadPictures(folderPath string, urlsChannel chan string, channelWithFilenam
 
 		fmt.Println("url channel status - ", isChannelEmpty)
 	}
-	if isChannelEmpty {
+	if isChannelEmpty{
 		close(channelWithFilenames) //todo CLOSE CHANNEL
 		fmt.Println("***one close***")
 	}

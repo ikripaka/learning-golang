@@ -30,7 +30,7 @@ const AvatarWidthSize = 64 //px
 // folderPath - path to the folder where images would be stored
 // filenamesChannel - channel that contains in it all filenames
 // waitGroup - sync.WaitGroup that helps to handle goroutines
-func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup) {
+func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup, numOfPictures *int) {
 	for imgFilename, isEmpty := <-filenamesChannel; isEmpty; {
 
 		originalFile, err := os.Open(folderPath + `\` + imgFilename)
@@ -46,7 +46,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			if err != nil {
 				handleClosingErrInOriginalFile(originalFile)
 				log.Println("Problems with decode", imgFilename)
-				imgFilename, isEmpty = <-filenamesChannel
+				imgFilename, _ = <-filenamesChannel
 				continue
 			}
 			_, err = originalFile.Seek(0, 0)
@@ -107,7 +107,11 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 		imgFilename, isEmpty = <-filenamesChannel
 		fmt.Println(isEmpty, imgFilename, "then")
 
+		fmt.Println(numOfPictures)
+		*numOfPictures--
 	}
+
+	fmt.Println(numOfPictures)
 	waitGroup.Done()
 	fmt.Println("done reduce ------")
 }
@@ -116,19 +120,19 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 // Adds to the filename '(avatar)' or if file exists gives different name
 // folderPath - path where scaled images would be stored
 // filename - file name
-func getFilenameForAvatars(folderPath string, filename string) string {
+func getFilenameForAvatars(folderPath string, filename string) (avatarFilename string) {
 
 	rand.Seed(time.Now().UnixNano())
 	regexMath := regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(filename)
 
 	if _, err := os.Stat(folderPath + `\` + regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]); os.IsNotExist(err) {
-		filename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
-		fmt.Println(filename)
+		avatarFilename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
+		fmt.Println(avatarFilename)
 		return regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 	}
 
-	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
-	fmt.Println(filename)
+	avatarFilename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
+	fmt.Println(avatarFilename)
 	return filename
 }
 
