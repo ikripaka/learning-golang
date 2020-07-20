@@ -30,14 +30,17 @@ const AvatarWidthSize = 64 //px
 // folderPath - path to the folder where images would be stored
 // filenamesChannel - channel that contains in it all filenames
 // waitGroup - sync.WaitGroup that helps to handle goroutines
-func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup, numOfPictures *int) {
-	for imgFilename, isEmpty := <-filenamesChannel; isEmpty; {
-		originalFile, err := os.Open(folderPath + `\` + imgFilename)
+func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *sync.WaitGroup, numOfUrls *int) {
+	//for imgFilename, _ := <-filenamesChannel; _; {
+	fmt.Println("here")
+	for imgFilename, _ := <-filenamesChannel; *numOfUrls != 0; *numOfUrls-- {
+		fmt.Println("number", numOfUrls)
 
+		originalFile, err := os.Open(folderPath + `\` + imgFilename)
 		if err != nil {
 			handleClosingErrInOriginalFile(originalFile)
 			log.Println("Can`t open image", imgFilename)
-			imgFilename, isEmpty = <-filenamesChannel
+			imgFilename, _ = <-filenamesChannel
 			continue
 
 		} else {
@@ -53,7 +56,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			if err != nil {
 				handleClosingErrInOriginalFile(originalFile)
 				log.Println("Problems with Reader.Seek()", imgFilename)
-				imgFilename, isEmpty = <-filenamesChannel
+				imgFilename, _ = <-filenamesChannel
 				continue
 			}
 
@@ -62,7 +65,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			if err != nil {
 				handleClosingErrInOriginalFile(originalFile)
 				log.Println("Problems with decode config", imgFilename)
-				imgFilename, isEmpty = <-filenamesChannel
+				imgFilename, _ = <-filenamesChannel
 				continue
 			}
 
@@ -77,7 +80,7 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 				handleClosingErrInOriginalFile(originalFile)
 
 				fmt.Println("Can`t create", newFilename)
-				imgFilename, isEmpty = <-filenamesChannel
+				imgFilename, _ = <-filenamesChannel
 				continue
 			}
 
@@ -102,17 +105,10 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 			err = outputFile.Close()
 
 		}
-		imgFilename, isEmpty = <-filenamesChannel
-<<<<<<< HEAD
-		fmt.Println(isEmpty, imgFilename, "then")
 
-		fmt.Println(numOfPictures)
-		*numOfPictures--
-=======
->>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
+		imgFilename, _ = <-filenamesChannel
+
 	}
-
-	fmt.Println(numOfPictures)
 	waitGroup.Done()
 }
 
@@ -120,19 +116,19 @@ func MakeAvatars(folderPath string, filenamesChannel chan string, waitGroup *syn
 // Adds to the filename '(avatar)' or if file exists gives different name
 // folderPath - path where scaled images would be stored
 // filename - file name
-func getFilenameForAvatars(folderPath string, filename string) (avatarFilename string) {
+func getFilenameForAvatars(folderPath string, filename string) string {
 
 	rand.Seed(time.Now().UnixNano())
 	regexMath := regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(filename)
 
 	if _, err := os.Stat(folderPath + `\` + regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]); os.IsNotExist(err) {
-		avatarFilename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
-		fmt.Println(avatarFilename)
+		filename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
+		fmt.Println(filename)
 		return regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 	}
 
-	avatarFilename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
-	fmt.Println(avatarFilename)
+	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
+	fmt.Println(filename)
 	return filename
 }
 

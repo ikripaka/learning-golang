@@ -24,10 +24,8 @@ const MAXDOWNLOADPROCESSES = 15
 
 // E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files
 func main() {
-	//numCPU := runtime.NumCPU()
+	numCPU := runtime.NumCPU()
 	var numOfUrls int
-	var waitGroup sync.WaitGroup
-
 	//args := os.Args[1:]
 	//urlFilePath := args[0]
 	//folderPath := args[1]
@@ -37,47 +35,27 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var waitGroup sync.WaitGroup
 	fmt.Println("Read urls from file..")
 
 	pictureUrls := make(chan string)
-<<<<<<< HEAD
 	waitGroup.Add(1)
 	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup, &numOfUrls)
-=======
-
-	go ReadPictureUrls(urlFilePath, pictureUrls)
->>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
 
 	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
+
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-<<<<<<< HEAD
 		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup)
 	}
-
-	for _, ok := <-channelWithFilenames; ok; {
-		//fmt.Println(ok, val)
-		_, ok = <-channelWithFilenames
-=======
-		go LoadPictures(urlFilePath, pictureUrls, channelWithFilenames, &waitGroup)
-	}
-	waitGroup.Wait()
-	close(channelWithFilenames)
 	waitGroup.Add(numCPU)
 
 	fmt.Println("Scale images..")
 	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(urlFilePath, channelWithFilenames, &waitGroup)
->>>>>>> parent of 2002d8b... Program run all groutines in parallel but I don't know how to close channel in imageLoader.go
+		go MakeAvatars(folderPath, channelWithFilenames, &waitGroup, &numOfUrls)
 	}
-	//waitGroup.Add(numCPU)
-	//
-	//fmt.Println("Scale images..")
-	//for i := 0; i < numCPU; i++ {
-	//	go MakeAvatars(folderPath, channelWithFilenames, &waitGroup, &numOfUrls)
-	//}
 	waitGroup.Wait()
 
 	fmt.Println("All is ready")
