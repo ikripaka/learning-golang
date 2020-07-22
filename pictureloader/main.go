@@ -85,5 +85,9 @@ func main() {
 
 	waitGroup.Wait()
 
+	close(pictureUrls)
+	close(downloadedImagesFilenames)
+	close(resizedImageChan)
+
 	fmt.Println("All is ready")
 }
