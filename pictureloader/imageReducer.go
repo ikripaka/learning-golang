@@ -30,26 +30,28 @@ const AvatarWidthSize = 64 //px
 // folderPath - path to the folder where images would be stored
 // filenamesChannel - channel that contains in it all filenames
 // waitGroup - sync.WaitGroup that helps to handle goroutines
-func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGroup *sync.WaitGroup, counter *int, numOfUrls int) {
-	//for item, _ := <-filenamesChannel; _; {
-	for item, _ := <-filenamesChannel; *counter < numOfUrls; *counter++ {
-		fmt.Println("number", numOfUrls)
 
+func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGroup *sync.WaitGroup, counter *int, numOfUrls int) {
+	for item, _ := <-filenamesChannel; *counter < numOfUrls; *counter++ {
 		originalFile, err := os.Open(item.imageFolderPath + `\` + item.filename)
+
 		if err != nil {
 			handleClosingErrInOriginalFile(originalFile, item)
 			item.errInResizing = errors.New("Can`t open image ")
 			item, _ = <-filenamesChannel
 			continue
 
-		} else {
+		} else { //if all is ok
+
 			decodedImage, _, err := image.Decode(bufio.NewReader(originalFile))
+
 			if err != nil {
 				handleClosingErrInOriginalFile(originalFile, item)
 				item.errInResizing = errors.New("Problems with decode ")
 				item, _ = <-filenamesChannel
 				continue
 			}
+
 			_, err = originalFile.Seek(0, 0)
 
 			if err != nil {
@@ -89,6 +91,7 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			case "jpeg", "jpg":
 				err = jpeg.Encode(outputFile, resizedImg, &jpeg.Options{Quality: 100})
 			}
+
 			if err != nil {
 				item.errInResizing = errors.New("Error in encoding: ")
 
@@ -102,7 +105,6 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 
 			handleClosingErrInOriginalFile(originalFile, item)
 			err = outputFile.Close()
-
 		}
 		resizedImageChan <- item
 		item, _ = <-filenamesChannel
@@ -142,6 +144,7 @@ func getReducedPixelSize(width int, height int) (uint, uint) {
 
 // Handles closing of opened file
 // originalFile - file
+// item - Item that contain all necessary info about file
 func handleClosingErrInOriginalFile(originalFile *os.File, item Item) {
 	err := originalFile.Close()
 

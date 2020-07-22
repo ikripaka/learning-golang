@@ -33,7 +33,6 @@ type Item struct {
 	errInResizing error
 }
 
-// E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files
 func main() {
 	numCPU := runtime.NumCPU()
 	var numOfUrls, counter int
@@ -66,11 +65,6 @@ func main() {
 		go LoadPictures(folderPath, pictureUrls, downloadedImagesFilenames, &waitGroup)
 	}
 
-	for counter=0;counter<numOfUrls ;counter++ {
-		val, ok := <-downloadedImagesFilenames
-		fmt.Println(ok, val.filename)
-		val, ok = <-downloadedImagesFilenames
-	}
 	waitGroup.Add(numCPU)
 
 	fmt.Println("Scale images..")
@@ -79,8 +73,18 @@ func main() {
 	}
 
 	for counter = 0; counter < numOfUrls; counter++ {
-		val, ok := <-resizedImageChan
-		fmt.Println(val.filename, val.avatarFilename, ok)
+		val, _ := <-resizedImageChan
+		if val.errInDownload != nil && val.errInResizing != nil {
+
+		} else if val.errInDownload == nil && val.errInResizing != nil {
+			fmt.Println("Failure in download ", val.filename, val.errInDownload)
+
+		} else if val.errInDownload != nil && val.errInResizing == nil {
+			fmt.Println("Failure in resize ", val.avatarFilename, val.errInResizing)
+
+		} else {
+			fmt.Println("Successful download and resize ", val.filename, val.avatarFilename)
+		}
 	}
 
 	waitGroup.Wait()

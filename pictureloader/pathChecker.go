@@ -20,5 +20,6 @@ func IsPathsCorrect(filePath, folderPath string) (bool, error) {
 	if os.IsNotExist(err) {
 		return false, errors.New("folder doesn't exist")
 	}
+
 	return true, nil
 }
