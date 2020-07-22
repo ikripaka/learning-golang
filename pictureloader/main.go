@@ -85,7 +85,6 @@ func main() {
 
 	waitGroup.Wait()
 
-	close(pictureUrls)
 	close(downloadedImagesFilenames)
 	close(resizedImageChan)
 
