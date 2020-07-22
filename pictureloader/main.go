@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"sync"
 )
@@ -22,40 +23,66 @@ func init() {
 
 const MAXDOWNLOADPROCESSES = 15
 
+type Item struct {
+	url             string
+	filename        string
+	avatarFilename  string
+	imageFolderPath string
+
+	errInDownload error
+	errInResizing error
+}
+
 // E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files
 func main() {
 	numCPU := runtime.NumCPU()
-	var numOfUrls int
-	//args := os.Args[1:]
-	//urlFilePath := args[0]
-	//folderPath := args[1]
-	urlFilePath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt`
-	folderPath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files`
+	var numOfUrls, counter int
+	var waitGroup sync.WaitGroup
+
+	pictureUrls := make(chan Item)
+	downloadedImagesFilenames := make(chan Item)
+	resizedImageChan := make(chan Item)
+
+	args := os.Args[1:]
+	urlFilePath := args[0]
+	folderPath := args[1]
+
+	//urlFilePath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt`
+	//folderPath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files`
 	if _, err := IsPathsCorrect(urlFilePath, folderPath); err != nil {
 		log.Fatal(err)
 	}
 
-	var waitGroup sync.WaitGroup
 	fmt.Println("Read urls from file..")
 
-	pictureUrls := make(chan string)
 	waitGroup.Add(1)
 	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup, &numOfUrls)
 
-	channelWithFilenames := make(chan string)
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
 
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(folderPath, pictureUrls, channelWithFilenames, &waitGroup)
+		go LoadPictures(folderPath, pictureUrls, downloadedImagesFilenames, &waitGroup)
+	}
+
+	for counter=0;counter<numOfUrls ;counter++ {
+		val, ok := <-downloadedImagesFilenames
+		fmt.Println(ok, val.filename)
+		val, ok = <-downloadedImagesFilenames
 	}
 	waitGroup.Add(numCPU)
 
 	fmt.Println("Scale images..")
 	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(folderPath, channelWithFilenames, &waitGroup, &numOfUrls)
+		go MakeAvatars(downloadedImagesFilenames, resizedImageChan, &waitGroup, &counter, numOfUrls)
 	}
+
+	for counter = 0; counter < numOfUrls; counter++ {
+		val, ok := <-resizedImageChan
+		fmt.Println(val.filename, val.avatarFilename, ok)
+	}
+
 	waitGroup.Wait()
 
 	fmt.Println("All is ready")
