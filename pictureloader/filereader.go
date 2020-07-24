@@ -15,6 +15,8 @@ import (
 // numOfUrls - reference for number in what stored number of all urls that exists in file
 
 func ReadPictureUrls(filePath string, chanWithUrls chan Item, waitGroup *sync.WaitGroup, numOfUrls *int) {
+	// reads all file in byte -> convert it to string -> splits it with new line symbol
+
 	allFileInByte, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal("Problems with reading file")

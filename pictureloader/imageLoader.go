@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const TopValueForGeneratingIndividualNamesForNewImages = 1024
+const TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES = 1024
 
 // Loads pictures from the internet, using urls from the file
 // folderPath - path to the folder where images would be saved
@@ -25,11 +25,16 @@ func LoadPictures(folderPath string, urlsChannel chan Item, channelWithFilenames
 	waitGroup *sync.WaitGroup) {
 	item, isChannelEmpty := <-urlsChannel
 	item.imageFolderPath = folderPath
+
+	// works until another goroutine read file
 	for isChannelEmpty {
 		item.filename = getFilenameForDownloadedImages(folderPath, item.url)
 
+		// get response from url
 		response, err := http.Get(item.url)
+
 		if err != nil {
+			// if all isn't ok, make empty file
 			fmt.Println(folderPath + `\` + item.filename)
 			out, err := os.Create(folderPath + `\` + item.filename)
 			if err != nil {
@@ -51,6 +56,7 @@ func LoadPictures(folderPath string, urlsChannel chan Item, channelWithFilenames
 			}
 
 		} else {
+			// if all is ok create file and copy response.Body to it
 
 			out, err := os.Create(folderPath + `\` + item.filename)
 			if err != nil {
@@ -74,7 +80,6 @@ func LoadPictures(folderPath string, urlsChannel chan Item, channelWithFilenames
 
 		channelWithFilenames <- item
 		item, isChannelEmpty = <-urlsChannel
-
 	}
 	waitGroup.Done()
 }
@@ -90,22 +95,25 @@ func getFilenameForDownloadedImages(folderPath string, url string) string {
 	var filename string
 	splitLineBySlash := strings.Split(url, `/`)
 
+	// if in url regexp find filename in the end of it like ...\town.jpg
 	if regExpForFilename.MatchString(url) &&
 		regExpForFileExtension.MatchString(splitLineBySlash[cap(splitLineBySlash)-1]) {
 		filename = regExpForFilename.FindString(url)
 
+		// if another image with same filename has already exist
 		if _, err := os.Stat(folderPath + `\` + filename); err == nil {
 			regexMath :=
 				regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(splitLineBySlash[cap(splitLineBySlash)-1])
 			filename = regexMath[cap(regexMath)-2] + " (" +
-				strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" +
+				strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) + ")" +
 				regexMath[cap(regexMath)-1]
 		}
 		fmt.Println(filename)
 		return filename
 	}
 
-	filename = "Picture_№_" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + `.jpg`
+	// if regexp cannot extract filename from url
+	filename = "Picture_№_" + strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) + `.jpg`
 	fmt.Println(filename)
 	return filename
 

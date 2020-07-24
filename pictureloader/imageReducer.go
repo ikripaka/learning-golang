@@ -32,6 +32,8 @@ const AvatarWidthSize = 64 //px
 // waitGroup - sync.WaitGroup that helps to handle goroutines
 
 func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGroup *sync.WaitGroup, counter *int, numOfUrls int) {
+
+	//works until counter < number of all urls that need to be processed
 	for item, _ := <-filenamesChannel; *counter < numOfUrls; *counter++ {
 		originalFile, err := os.Open(item.imageFolderPath + `\` + item.filename)
 
@@ -41,8 +43,9 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			item, _ = <-filenamesChannel
 			continue
 
-		} else { //if all is ok
+		} else { //if program can open downloaded file
 
+			// decodes image file to Image
 			decodedImage, _, err := image.Decode(bufio.NewReader(originalFile))
 
 			if err != nil {
@@ -52,6 +55,7 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 				continue
 			}
 
+			//  returns reader to the beginning of file
 			_, err = originalFile.Seek(0, 0)
 
 			if err != nil {
@@ -61,6 +65,7 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 				continue
 			}
 
+			// finds out file format/size/color signature
 			configDecode, format, err := image.DecodeConfig(bufio.NewReader(originalFile))
 
 			if err != nil {
@@ -70,10 +75,11 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 				continue
 			}
 
+			// resize image size according to original image proportion
 			width, height := getReducedPixelSize(configDecode.Width, configDecode.Height)
-
 			resizedImg := resize.Resize(width, height, decodedImage, resize.MitchellNetravali)
 
+			// creates new file for avatar
 			newFilename := getFilenameForAvatars(item.imageFolderPath, item.filename)
 			outputFile, err := os.Create(item.imageFolderPath + `\` + newFilename)
 
@@ -85,6 +91,7 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 				continue
 			}
 
+			// saves image depending on input file format
 			switch format {
 			case "png":
 				err = png.Encode(outputFile, resizedImg)
@@ -118,17 +125,19 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 // folderPath - path where scaled images would be stored
 // filename - file name
 func getFilenameForAvatars(folderPath string, filename string) string {
-
 	rand.Seed(time.Now().UnixNano())
 	regexMath := regexp.MustCompile(`(.+?)(\.[^.]*$|$)`).FindStringSubmatch(filename)
 
+	// if file with same filename not exist
 	if _, err := os.Stat(folderPath + `\` + regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]); os.IsNotExist(err) {
 		filename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 		fmt.Println(filename)
 		return regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 	}
 
-	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TopValueForGeneratingIndividualNamesForNewImages)) + ")" + regexMath[cap(regexMath)-1]
+	// if file with same filename exist
+	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) +
+		")" + regexMath[cap(regexMath)-1]
 	fmt.Println(filename)
 	return filename
 }

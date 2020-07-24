@@ -23,6 +23,7 @@ func init() {
 
 const MAXDOWNLOADPROCESSES = 15
 
+// this struct describes picture info in order not to pass many values in functions
 type Item struct {
 	url             string
 	filename        string
@@ -38,16 +39,15 @@ func main() {
 	var numOfUrls, counter int
 	var waitGroup sync.WaitGroup
 
-	pictureUrls := make(chan Item)
+	pictureUrlsChan := make(chan Item)
 	downloadedImagesFilenames := make(chan Item)
 	resizedImageChan := make(chan Item)
 
+	// get variables
 	args := os.Args[1:]
 	urlFilePath := args[0]
 	folderPath := args[1]
 
-	//urlFilePath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\test.txt`
-	//folderPath := `E:\gocode\src\github.com\ikripaka\learning-golang\pictureloader\load_files`
 	if _, err := IsPathsCorrect(urlFilePath, folderPath); err != nil {
 		log.Fatal(err)
 	}
@@ -55,23 +55,27 @@ func main() {
 	fmt.Println("Read urls from file..")
 
 	waitGroup.Add(1)
-	go ReadPictureUrls(urlFilePath, pictureUrls, &waitGroup, &numOfUrls)
+	// read picture urls and push data to pictureUrlsChan
+	go ReadPictureUrls(urlFilePath, pictureUrlsChan, &waitGroup, &numOfUrls)
 
 	waitGroup.Add(MAXDOWNLOADPROCESSES)
 
 	fmt.Println("Download images..")
 
+	// load pictures from internet and push data to downloadedImagesFilenames
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(folderPath, pictureUrls, downloadedImagesFilenames, &waitGroup)
+		go LoadPictures(folderPath, pictureUrlsChan, downloadedImagesFilenames, &waitGroup)
 	}
 
 	waitGroup.Add(numCPU)
 
+	// scale images and push data to resizedImageChan
 	fmt.Println("Scale images..")
 	for i := 0; i < numCPU; i++ {
 		go MakeAvatars(downloadedImagesFilenames, resizedImageChan, &waitGroup, &counter, numOfUrls)
 	}
 
+	// show program results
 	for counter = 0; counter < numOfUrls; counter++ {
 		val, _ := <-resizedImageChan
 		if val.errInDownload != nil && val.errInResizing != nil {
@@ -89,6 +93,7 @@ func main() {
 
 	waitGroup.Wait()
 
+	// close all channels (there is no third channel. because it closed in ReadPictureUrls func)
 	close(downloadedImagesFilenames)
 	close(resizedImageChan)
 
