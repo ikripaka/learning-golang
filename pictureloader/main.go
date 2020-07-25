@@ -55,10 +55,10 @@ func (e *PictureLoaderError) Error() string {
 func main() {
 
 	// get variables
-	urlFilePath, folderPath := getArgs(os.Args[1:])
+	urlFilePath, downloadedImagesFolderPath := getArgs(os.Args[1:])
 
 	config := ProgramConfig{
-		imageFolderPath:           folderPath,
+		imageFolderPath:           downloadedImagesFolderPath,
 		downloadedImagesFilenames: make(chan Item),
 		resizedImageChan:          make(chan Item),
 		avatarWidthSize:           64}
