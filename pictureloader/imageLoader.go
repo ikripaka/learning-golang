@@ -31,21 +31,21 @@ func LoadPictures(config *ProgramConfig) {
 			// if all isn't ok, make empty file
 			out, err := os.Create(filepath)
 			if err != nil || out == nil {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Can't create file",imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: "Can't create file", imgFilepath: filepath}
 			}
 			err = out.Close()
 			if err != nil {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Can't close file",imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: "Can't close file", imgFilepath: filepath}
 			}
 
 			if response != nil {
 				err = response.Body.Close()
 			} else {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: ("Empty response url: " + item.url) ,imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: ("Empty response url: " + item.url), imgFilepath: filepath}
 			}
 
 			if err != nil {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing response url: " + item.url ,imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: "Closing response url: " + item.url, imgFilepath: filepath}
 			}
 
 		} else {
@@ -62,12 +62,12 @@ func LoadPictures(config *ProgramConfig) {
 
 			err = out.Close()
 			if err != nil {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing file",imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: "Closing file", imgFilepath: filepath}
 			}
 
 			err = response.Body.Close()
 			if err != nil {
-				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing response url:" + item.url ,imgFilepath: filepath }
+				item.err = &PictureLoaderError{problemOccurrence: "DOWNLOAD", problemDescription: "Closing response url:" + item.url, imgFilepath: filepath}
 			}
 		}
 

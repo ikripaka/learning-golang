@@ -37,6 +37,8 @@ type ProgramConfig struct {
 	pictureUrlsChan           chan Item
 	downloadedImagesFilenames chan Item
 	resizedImageChan          chan Item
+	avatarWidthSize           int //px
+
 }
 
 // this error represents one error type that can appear in program execution
@@ -58,7 +60,8 @@ func main() {
 	config := ProgramConfig{
 		imageFolderPath:           folderPath,
 		downloadedImagesFilenames: make(chan Item),
-		resizedImageChan:          make(chan Item)}
+		resizedImageChan:          make(chan Item),
+		avatarWidthSize:           64}
 
 	fmt.Println("Reading urls from file..")
 

@@ -21,8 +21,6 @@ func init() {
 	image.RegisterFormat("png", "png", png.Decode, png.DecodeConfig)
 }
 
-const AvatarWidthSize = 64 //px
-
 // MakesAvatars with using "github.com/nfnt/resize"
 // config - program configuration that contains all variables that need
 // counter - counter for goroutines
@@ -83,7 +81,7 @@ func MakeAvatars(counter *int, config *ProgramConfig) {
 			}
 
 			// resize image size according to original image proportion
-			width, height := getReducedPixelSize(configDecode.Width, configDecode.Height)
+			width, height := getReducedPixelSize(configDecode.Width, configDecode.Height, config)
 			resizedImg := resize.Resize(width, height, decodedImage, resize.MitchellNetravali)
 
 			// creates new file for avatar
@@ -151,10 +149,10 @@ func getFilenameForAvatars(folderPath string, filename string) string {
 // Calculates reduced pixel size depending on const AvatarWidthSize
 // width - original image width
 // height - original image height
-func getReducedPixelSize(width int, height int) (uint, uint) {
+func getReducedPixelSize(width int, height int, config *ProgramConfig) (uint, uint) {
 	pixelsPerOneWidthPixel := float32(height) / float32(width)
-	reducedImageHeight := pixelsPerOneWidthPixel * AvatarWidthSize
-	return AvatarWidthSize, uint(reducedImageHeight)
+	reducedImageHeight := pixelsPerOneWidthPixel * float32(config.avatarWidthSize)
+	return uint(config.avatarWidthSize), uint(reducedImageHeight)
 }
 
 // Handles closing of opened file

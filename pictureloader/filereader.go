@@ -15,7 +15,7 @@ const MAXARGSNUMBER = 2
 // filePath - filepath for file with urls
 // config - program configuration that contains all variables that need
 
-func ReadPictureUrls(filePath string,config *ProgramConfig) {
+func ReadPictureUrls(filePath string, config *ProgramConfig) {
 	// reads all file in byte -> convert it to string -> splits it with new line symbol
 
 	allFileInByte, err := ioutil.ReadFile(filePath)
