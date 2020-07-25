@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime"
-	"sync"
 )
 
 // Program reads file with urls
@@ -25,77 +23,73 @@ const MAXDOWNLOADPROCESSES = 15
 
 // this struct describes picture info in order not to pass many values in functions
 type Item struct {
-	url             string
-	filename        string
-	avatarFilename  string
+	url            string
+	filename       string
+	avatarFilename string
+
+	err error
+}
+
+// this struct helps to contain all program configuration variable at one place
+type ProgramConfig struct {
 	imageFolderPath string
 
-	errInDownload error
-	errInResizing error
+	pictureUrlsChan           chan Item
+	downloadedImagesFilenames chan Item
+	resizedImageChan          chan Item
+}
+
+// this error represents one error type that can appear in program execution
+type PictureLoaderError struct {
+	problemOccurrence  string
+	problemDescription string
+	imgFilepath        string
+}
+
+func (e *PictureLoaderError) Error() string {
+	return "image" + e.imgFilepath + "has problems with " + e.problemOccurrence + " " + e.problemDescription
 }
 
 func main() {
-	numCPU := runtime.NumCPU()
-	var numOfUrls, counter int
-	var waitGroup sync.WaitGroup
-
-	pictureUrlsChan := make(chan Item)
-	downloadedImagesFilenames := make(chan Item)
-	resizedImageChan := make(chan Item)
 
 	// get variables
-	args := os.Args[1:]
-	urlFilePath := args[0]
-	folderPath := args[1]
+	urlFilePath, folderPath := getArgs(os.Args[1:])
 
-	if _, err := IsPathsCorrect(urlFilePath, folderPath); err != nil {
-		log.Fatal(err)
-	}
+	config := ProgramConfig{
+		imageFolderPath:           folderPath,
+		downloadedImagesFilenames: make(chan Item),
+		resizedImageChan:          make(chan Item)}
 
-	fmt.Println("Read urls from file..")
+	fmt.Println("Reading urls from file..")
 
-	waitGroup.Add(1)
 	// read picture urls and push data to pictureUrlsChan
-	go ReadPictureUrls(urlFilePath, pictureUrlsChan, &waitGroup, &numOfUrls)
+	ReadPictureUrls(urlFilePath, &config)
 
-	waitGroup.Add(MAXDOWNLOADPROCESSES)
-
-	fmt.Println("Download images..")
+	fmt.Println("Downloading images..")
 
 	// load pictures from internet and push data to downloadedImagesFilenames
 	for i := 0; i < MAXDOWNLOADPROCESSES; i++ {
-		go LoadPictures(folderPath, pictureUrlsChan, downloadedImagesFilenames, &waitGroup)
+		go LoadPictures(&config)
 	}
 
-	waitGroup.Add(numCPU)
+	var counter int
 
 	// scale images and push data to resizedImageChan
-	fmt.Println("Scale images..")
-	for i := 0; i < numCPU; i++ {
-		go MakeAvatars(downloadedImagesFilenames, resizedImageChan, &waitGroup, &counter, numOfUrls)
+	fmt.Println("Scaling images..")
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go MakeAvatars(&counter, &config)
 	}
 
 	// show program results
-	for counter = 0; counter < numOfUrls; counter++ {
-		val, _ := <-resizedImageChan
-		if val.errInDownload != nil && val.errInResizing != nil {
+	for i := 0; i < cap(config.pictureUrlsChan); i++ {
 
-		} else if val.errInDownload == nil && val.errInResizing != nil {
-			fmt.Println("Failure in download ", val.filename, val.errInDownload)
+		item, _ := <-config.resizedImageChan
 
-		} else if val.errInDownload != nil && val.errInResizing == nil {
-			fmt.Println("Failure in resize ", val.avatarFilename, val.errInResizing)
-
+		if item.err != nil {
+			fmt.Println(item.err)
 		} else {
-			fmt.Println("Successful download and resize ", val.filename, val.avatarFilename)
+			fmt.Println("Successful download and resize ", item.filename, item.avatarFilename)
 		}
 	}
-
-	waitGroup.Wait()
-
-	// close all channels (there is no third channel. because it closed in ReadPictureUrls func)
-	close(downloadedImagesFilenames)
-	close(resizedImageChan)
-
 	fmt.Println("All is ready")
 }

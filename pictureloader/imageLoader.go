@@ -1,8 +1,6 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -11,54 +9,49 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
-const TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES = 1024
+const TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES = 2048
 
 // Loads pictures from the internet, using urls from the file
-// folderPath - path to the folder where images would be saved
-// urlsChannel - channel with urls
-// channelWithFilenames - channel with filenames that would be save file names
-func LoadPictures(folderPath string, urlsChannel chan Item, channelWithFilenames chan Item,
-	waitGroup *sync.WaitGroup) {
-	item, isChannelEmpty := <-urlsChannel
-	item.imageFolderPath = folderPath
+// config - program configuration that contains all variables that need
+func LoadPictures(config *ProgramConfig) {
+	item, isChannelEmpty := <-config.pictureUrlsChan
 
 	// works until another goroutine read file
 	for isChannelEmpty {
-		item.filename = getFilenameForDownloadedImages(folderPath, item.url)
+		item.filename = getFilenameForDownloadedImages(config.imageFolderPath, item.url)
+		filepath := config.imageFolderPath + `\` + item.filename
 
 		// get response from url
 		response, err := http.Get(item.url)
 
 		if err != nil {
 			// if all isn't ok, make empty file
-			fmt.Println(folderPath + `\` + item.filename)
-			out, err := os.Create(folderPath + `\` + item.filename)
-			if err != nil {
-				log.Fatal(err)
+			out, err := os.Create(filepath)
+			if err != nil || out == nil {
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Can't create file",imgFilepath: filepath }
 			}
 			err = out.Close()
 			if err != nil {
-				item.errInDownload = errors.New("Error in out.Close()" + item.filename)
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Can't close file",imgFilepath: filepath }
 			}
 
 			if response != nil {
 				err = response.Body.Close()
 			} else {
-				item.errInDownload = errors.New("Empty response in file" + item.filename)
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: ("Empty response url: " + item.url) ,imgFilepath: filepath }
 			}
 
 			if err != nil {
-				item.errInDownload = errors.New("Error in response.Body.Close() " + item.filename)
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing response url: " + item.url ,imgFilepath: filepath }
 			}
 
 		} else {
 			// if all is ok create file and copy response.Body to it
 
-			out, err := os.Create(folderPath + `\` + item.filename)
+			out, err := os.Create(filepath)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -69,25 +62,23 @@ func LoadPictures(folderPath string, urlsChannel chan Item, channelWithFilenames
 
 			err = out.Close()
 			if err != nil {
-				item.errInDownload = errors.New("Error in out.Close() " + item.filename)
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing file",imgFilepath: filepath }
 			}
 
 			err = response.Body.Close()
 			if err != nil {
-				item.errInDownload = errors.New("Error in response.Body.Close() " + item.filename)
+				item.err = &PictureLoaderError{ problemOccurrence: "DOWNLOAD",problemDescription: "Closing response url:" + item.url ,imgFilepath: filepath }
 			}
 		}
 
-		channelWithFilenames <- item
-		item, isChannelEmpty = <-urlsChannel
+		config.downloadedImagesFilenames <- item
+		item, isChannelEmpty = <-config.pictureUrlsChan
 	}
-	waitGroup.Done()
 }
 
 // Gets filename for file (from url/individual name)
 // folderPath - folder path for correct path to the file
 // url - url from what extracts filename
-// filenameChannel - channel with filenames
 func getFilenameForDownloadedImages(folderPath string, url string) string {
 	rand.Seed(time.Now().UnixNano())
 	var regExpForFilename = regexp.MustCompile(`(?:[^/][-\w\.]+)+$`)
@@ -107,14 +98,12 @@ func getFilenameForDownloadedImages(folderPath string, url string) string {
 			filename = regexMath[cap(regexMath)-2] + " (" +
 				strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) + ")" +
 				regexMath[cap(regexMath)-1]
+
 		}
-		fmt.Println(filename)
 		return filename
 	}
 
 	// if regexp cannot extract filename from url
-	filename = "Picture_№_" + strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) + `.jpg`
-	fmt.Println(filename)
+	filename = "Picture_#_" + strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) + `.jpg`
 	return filename
-
 }

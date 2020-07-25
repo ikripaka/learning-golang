@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
-	"fmt"
 	"github.com/nfnt/resize"
 	"image"
 	"image/jpeg"
@@ -12,7 +10,6 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"sync"
 	"time"
 
 	_ "image/jpeg"
@@ -27,20 +24,22 @@ func init() {
 const AvatarWidthSize = 64 //px
 
 // MakesAvatars with using "github.com/nfnt/resize"
-// folderPath - path to the folder where images would be stored
-// filenamesChannel - channel that contains in it all filenames
-// waitGroup - sync.WaitGroup that helps to handle goroutines
+// config - program configuration that contains all variables that need
+// counter - counter for goroutines
 
-func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGroup *sync.WaitGroup, counter *int, numOfUrls int) {
+func MakeAvatars(counter *int, config *ProgramConfig) {
 
 	//works until counter < number of all urls that need to be processed
-	for item, _ := <-filenamesChannel; *counter < numOfUrls; *counter++ {
-		originalFile, err := os.Open(item.imageFolderPath + `\` + item.filename)
+	for item, _ := <-config.downloadedImagesFilenames; *counter < cap(config.pictureUrlsChan); *counter++ {
+		filepath := config.imageFolderPath + `\` + item.filename
+		originalFile, err := os.Open(filepath)
 
 		if err != nil {
-			handleClosingErrInOriginalFile(originalFile, item)
-			item.errInResizing = errors.New("Can`t open image ")
-			item, _ = <-filenamesChannel
+			handleClosingErrInOriginalFile(originalFile, item, filepath)
+			item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Image opening", imgFilepath: filepath}
+			config.resizedImageChan <- item
+
+			item, _ = <-config.downloadedImagesFilenames
 			continue
 
 		} else { //if program can open downloaded file
@@ -49,9 +48,12 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			decodedImage, _, err := image.Decode(bufio.NewReader(originalFile))
 
 			if err != nil {
-				handleClosingErrInOriginalFile(originalFile, item)
-				item.errInResizing = errors.New("Problems with decode ")
-				item, _ = <-filenamesChannel
+				handleClosingErrInOriginalFile(originalFile, item, filepath)
+				item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Decoding file to Image", imgFilepath: filepath}
+
+				config.resizedImageChan <- item
+				item, _ = <-config.downloadedImagesFilenames
+
 				continue
 			}
 
@@ -59,9 +61,11 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			_, err = originalFile.Seek(0, 0)
 
 			if err != nil {
-				handleClosingErrInOriginalFile(originalFile, item)
-				item.errInResizing = errors.New("Problems with Reader.Seek() ")
-				item, _ = <-filenamesChannel
+				handleClosingErrInOriginalFile(originalFile, item, filepath)
+				item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Reader.Seek()", imgFilepath: filepath}
+
+				config.resizedImageChan <- item
+				item, _ = <-config.downloadedImagesFilenames
 				continue
 			}
 
@@ -69,9 +73,12 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			configDecode, format, err := image.DecodeConfig(bufio.NewReader(originalFile))
 
 			if err != nil {
-				handleClosingErrInOriginalFile(originalFile, item)
-				item.errInResizing = errors.New("Problems with decode config ")
-				item, _ = <-filenamesChannel
+				handleClosingErrInOriginalFile(originalFile, item, filepath)
+				item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Decoding image configuration", imgFilepath: filepath}
+
+				config.resizedImageChan <- item
+				item, _ = <-config.downloadedImagesFilenames
+
 				continue
 			}
 
@@ -80,14 +87,16 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			resizedImg := resize.Resize(width, height, decodedImage, resize.MitchellNetravali)
 
 			// creates new file for avatar
-			newFilename := getFilenameForAvatars(item.imageFolderPath, item.filename)
-			outputFile, err := os.Create(item.imageFolderPath + `\` + newFilename)
+			newFilename := getFilenameForAvatars(config.imageFolderPath, item.filename)
+			outputFile, err := os.Create(config.imageFolderPath + `\` + newFilename)
 
 			if err != nil {
-				handleClosingErrInOriginalFile(originalFile, item)
+				handleClosingErrInOriginalFile(originalFile, item, filepath)
+				item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Creating new avatar file", imgFilepath: filepath}
 
-				item.errInResizing = errors.New("Can`t create " + newFilename)
-				item, _ = <-filenamesChannel
+				config.resizedImageChan <- item
+				item, _ = <-config.downloadedImagesFilenames
+
 				continue
 			}
 
@@ -100,24 +109,23 @@ func MakeAvatars(filenamesChannel chan Item, resizedImageChan chan Item, waitGro
 			}
 
 			if err != nil {
-				item.errInResizing = errors.New("Error in encoding: ")
+				item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Encoding avatar file to format " + format, imgFilepath: filepath}
 
-				handleClosingErrInOriginalFile(originalFile, item)
+				handleClosingErrInOriginalFile(originalFile, item, filepath)
 
 				err = outputFile.Close()
 				if err != nil {
-					item.errInResizing = errors.New("Error in closing output file ")
+					item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Closing avatar file ", imgFilepath: filepath}
 				}
 			}
 
-			handleClosingErrInOriginalFile(originalFile, item)
+			handleClosingErrInOriginalFile(originalFile, item, filepath)
 			err = outputFile.Close()
-		}
-		resizedImageChan <- item
-		item, _ = <-filenamesChannel
 
+		}
+		config.resizedImageChan <- item
+		item, _ = <-config.downloadedImagesFilenames
 	}
-	waitGroup.Done()
 }
 
 // Get'f filename depending on filename name
@@ -131,14 +139,12 @@ func getFilenameForAvatars(folderPath string, filename string) string {
 	// if file with same filename not exist
 	if _, err := os.Stat(folderPath + `\` + regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]); os.IsNotExist(err) {
 		filename = regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
-		fmt.Println(filename)
 		return regexMath[cap(regexMath)-2] + " (avatar) " + regexMath[cap(regexMath)-1]
 	}
 
 	// if file with same filename exist
 	filename = regexMath[cap(regexMath)-2] + " (" + strconv.Itoa(rand.Intn(TOPVALUEFORGENERATINGINDIVIDUALNAMESFORNESIMAGES)) +
 		")" + regexMath[cap(regexMath)-1]
-	fmt.Println(filename)
 	return filename
 }
 
@@ -154,10 +160,11 @@ func getReducedPixelSize(width int, height int) (uint, uint) {
 // Handles closing of opened file
 // originalFile - file
 // item - Item that contain all necessary info about file
-func handleClosingErrInOriginalFile(originalFile *os.File, item Item) {
+// filepath - filepath that used for creating error
+func handleClosingErrInOriginalFile(originalFile *os.File, item Item, filepath string) {
 	err := originalFile.Close()
 
 	if err != nil {
-		item.errInResizing = errors.New("Error in closing original file ")
+		item.err = &PictureLoaderError{problemOccurrence: "RESIZING", problemDescription: "Closing downloaded file", imgFilepath: filepath}
 	}
 }
