@@ -1,31 +1,54 @@
 package main
 
 import (
-	"fmt"
 	"github.com/manifoldco/promptui"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
 
-func formList(config *ProgramConfig){
-	log.Println(config.listFormerCommand.commandName, config.listFormerCommand.commandArgs)
-	// execute list former command
-	cmd:=exec.Command(config.listFormerCommand.commandName, config.listFormerCommand.commandArgs...)
-	b, err := cmd.CombinedOutput()
-	if err != nil{
-		log.Println("54")
-		log.Fatal(err)
+// forms list depending on user file input
+func formList(config *ProgramConfig) {
+	// creates lists
+	listNames := make([]string, len(config.listOfSelectableItems))
+	listOfCommands := make([]string, len(config.listOfSelectableItems))
+
+	//parsing commands name and args
+	for i, val := range config.listOfSelectableItems {
+		listNames[i] = val.listNaming
+		listOfCommands[i] = val.command
 	}
-	log.Println(string(b))
 
-	// split command output by "\n"
-	config.listFormerOutput = strings.Split(string(b), "\n")
-
+	//creating list in cli
 	prompt := promptui.Select{
 		Label: "Select settings for the command execution",
-		Items: config.listFormerOutput,
+		Items: listNames,
+		Size:  cap(listNames),
 	}
-	_, result, err := prompt.Run()
-	fmt.Println("Result: ", result)
+
+	//running selection in command prompt
+	index, result, err := prompt.Run()
+	if err != nil {
+		log.Fatal(LISTEXECUTIONERROR{err: err})
+	}
+	config.userChoice = result
+	config.userChoiceListIndex = index
+
+}
+
+// executing selected command
+func executeSelectedCommand(config *ProgramConfig) {
+	//splitting command by " "
+	parsedCommand := strings.Split(config.listOfSelectableItems[config.userChoiceListIndex].command, " ")
+
+	cmd := exec.Command(parsedCommand[0], parsedCommand[1:]...)
+	//redirected the output to the console
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }

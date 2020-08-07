@@ -1,0 +1,4 @@
+show ls::ls /home/
+print num::echo 12456
+print phrase::echo "Hello world"
+another ls::ls -lah
