@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/manifoldco/promptui"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 // forms list depending on user file input
@@ -40,15 +43,36 @@ func formList(config *ProgramConfig) {
 // executing selected command
 func executeSelectedCommand(config *ProgramConfig) {
 	//splitting command by " "
-	parsedCommand := strings.Split(config.listOfSelectableItems[config.userChoiceListIndex].command, " ")
+	if strings.Contains(config.listOfSelectableItems[config.userChoiceListIndex].command, " && ") {
+		splittedCommands := strings.Split(config.listOfSelectableItems[config.userChoiceListIndex].command, " && ")
+		for _, val := range splittedCommands {
+			execCommand(val)
+		}
+	} else {
+		execCommand(config.listOfSelectableItems[config.userChoiceListIndex].command)
+	}
+
+}
+func execCommand(command string) {
+	parsedCommand := strings.Split(command, " ")
 
 	cmd := exec.Command(parsedCommand[0], parsedCommand[1:]...)
 	//redirected the output to the console
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
-
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// channel to handle ctrl+c
+	c := make(chan os.Signal)
+	// handling SIGTERM
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	// func that processing SIGTERM
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+	}()
+
 }

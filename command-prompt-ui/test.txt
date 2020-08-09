@@ -2,3 +2,5 @@ show ls::ls /home/
 print num::echo 12456
 print phrase::echo "Hello world"
 another ls::ls -lah
+double command::ls && ping google.com
+triple command:: ls && ping google.com && ls
