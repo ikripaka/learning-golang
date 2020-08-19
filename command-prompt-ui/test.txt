@@ -1,4 +1,4 @@
-show ls::ls /home/
+show ls::ls -al -t | grep go >> test.txt
 print num::echo 12456
 print phrase::echo "Hello world"
 another ls::ls -lah

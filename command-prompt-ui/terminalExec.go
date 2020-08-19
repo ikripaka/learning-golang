@@ -1,24 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"github.com/manifoldco/promptui"
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
-// forms list depending on user file input
-func formList(config *ProgramConfig) {
+// Command beginning for command execution with pipe (|)
+var DEFAULTEXECUTIONCOMMAND = []string{"sh" ,"-c"}
+
+// Forms list depending on user file input
+func formList(listOfSelectableItems []TerminalCommand) (listIndex int, userChoice string) {
 	// creates lists
-	listNames := make([]string, len(config.listOfSelectableItems))
-	listOfCommands := make([]string, len(config.listOfSelectableItems))
+	listNames := make([]string, len(listOfSelectableItems))
+	listOfCommands := make([]string, len(listOfSelectableItems))
 
 	//parsing commands name and args
-	for i, val := range config.listOfSelectableItems {
+	for i, val := range listOfSelectableItems {
 		listNames[i] = val.listNaming
 		listOfCommands[i] = val.command
 	}
@@ -27,52 +26,27 @@ func formList(config *ProgramConfig) {
 	prompt := promptui.Select{
 		Label: "Select settings for the command execution",
 		Items: listNames,
-		Size:  cap(listNames),
+		Size:  len(listNames),
 	}
 
 	//running selection in command prompt
-	index, result, err := prompt.Run()
+	listIndex, userChoice, err := prompt.Run()
 	if err != nil {
 		log.Fatal(LISTEXECUTIONERROR{err: err})
 	}
-	config.userChoice = result
-	config.userChoiceListIndex = index
 
+	return
 }
 
-// executing selected command
-func executeSelectedCommand(config *ProgramConfig) {
-	//splitting command by " "
-	if strings.Contains(config.listOfSelectableItems[config.userChoiceListIndex].command, " && ") {
-		splittedCommands := strings.Split(config.listOfSelectableItems[config.userChoiceListIndex].command, " && ")
-		for _, val := range splittedCommands {
-			execCommand(val)
-		}
-	} else {
-		execCommand(config.listOfSelectableItems[config.userChoiceListIndex].command)
-	}
-
-}
-func execCommand(command string) {
-	parsedCommand := strings.Split(command, " ")
-
-	cmd := exec.Command(parsedCommand[0], parsedCommand[1:]...)
+// Executing selected command using command beginning DEFAULTEXECUTIONCOMMAND
+func executeSelectedCommand(command string) {
+	cmd := exec.Command(DEFAULTEXECUTIONCOMMAND[0], DEFAULTEXECUTIONCOMMAND[1], command)
 	//redirected the output to the console
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	// running command
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// channel to handle ctrl+c
-	c := make(chan os.Signal)
-	// handling SIGTERM
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	// func that processing SIGTERM
-	go func() {
-		<-c
-		fmt.Println("\r- Ctrl+C pressed in Terminal")
-	}()
-
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,8 +9,6 @@ import (
 
 // checks and returns correct args
 
-const COMMANDSASSOCIATIONSDELIMITER = "::"
-
 // max arguments number is 2 (file path value/folder path value)
 const MAXARGSNUMBER = 1
 
@@ -19,9 +16,9 @@ const MAXARGSNUMBER = 1
 // filePath - filepath for file with urls
 // config - program configuration that contains all variables that need
 
-func ReadListConfig(filePath string, config *ProgramConfig) {
+func ReadConfig(filePath string) (config *ProgramConfig) {
 	// reads all file in byte -> convert it to string -> splits it with new line symbol -> splits line with delimiter
-
+	config = &ProgramConfig{}
 	allFileInByte, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal("Problems with reading file")
@@ -32,25 +29,26 @@ func ReadListConfig(filePath string, config *ProgramConfig) {
 		splittedData := strings.Split(val, "::")
 		config.listOfSelectableItems[i] = TerminalCommand{splittedData[0], splittedData[len(splittedData)-1]}
 	}
+	return
 }
 
-// checks whether the path is exists
+// Checks whether the path is exists
 func IsPathsCorrect(filePath string) error {
 
 	// checks if file exists
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		return errors.New("file doesn't exist")
+		return INCORRECTFILEPATH
 	}
 
 	return nil
 }
 
-// checks and returns correct args
+// Checks and returns correct args
 func getArgs(args []string) (filePath string) {
 	//checks if number of args in slice is correct
 	if len(args) != MAXARGSNUMBER {
-		log.Fatal("Incorrect number of argumets ", "requires:", MAXARGSNUMBER, " has:", len(args))
+		log.Fatal("Incorrect number of arguments ", "requires:", MAXARGSNUMBER, " has:", len(args))
 	}
 
 	filePath = args[0]

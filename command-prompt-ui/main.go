@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+// This program is realisation of Command Prompt UserInterface
+
+// Firstly to run it you should write your config file in this way " command name/description::command"
+// Then build it and run with one argument - absolute path to the file
+
 // error that occurs with filepath
 var INCORRECTFILEPATH = errors.New("file doesn't exist")
 
@@ -20,8 +25,6 @@ func (e *LISTEXECUTIONERROR) Error() string {
 // this struct helps to contain all program configuration variable at one place
 type ProgramConfig struct {
 	listOfSelectableItems []TerminalCommand
-	userChoice            string
-	userChoiceListIndex   int
 }
 
 //this struct represents terminal command separation
@@ -30,15 +33,15 @@ type TerminalCommand struct {
 	command    string
 }
 
-func (command *TerminalCommand) String() string {
-	return command.listNaming + ": " + command.command
-}
-
 func main() {
-	config := ProgramConfig{}
-
 	filepath := getArgs(os.Args[1:])
-	ReadListConfig(filepath, &config)
-	formList(&config)
-	executeSelectedCommand(&config)
+
+	// reading configuration file
+	config := ReadConfig(filepath)
+
+	// forming list which return user choice
+	listIndex,_ :=formList(config.listOfSelectableItems)
+
+	// executing chosen command
+	executeSelectedCommand(config.listOfSelectableItems[listIndex].command )
 }
