@@ -40,8 +40,8 @@ func main() {
 	config := ReadConfig(filepath)
 
 	// forming list which return user choice
-	listIndex,_ :=formList(config.listOfSelectableItems)
+	listIndex, _ := formList(config.listOfSelectableItems)
 
 	// executing chosen command
-	executeSelectedCommand(config.listOfSelectableItems[listIndex].command )
+	executeSelectedCommand(config.listOfSelectableItems[listIndex].command)
 }

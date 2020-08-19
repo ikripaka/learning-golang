@@ -8,7 +8,7 @@ import (
 )
 
 // Command beginning for command execution with pipe (|)
-var DEFAULTEXECUTIONCOMMAND = []string{"sh" ,"-c"}
+var DEFAULTEXECUTIONCOMMAND = []string{"sh", "-c"}
 
 // Forms list depending on user file input
 func formList(listOfSelectableItems []TerminalCommand) (listIndex int, userChoice string) {
