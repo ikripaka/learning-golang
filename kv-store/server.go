@@ -5,27 +5,30 @@ import (
 	"errors"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var INCORRECTARGSQUANTITY = errors.New("Incorrect args quantity")
-var NOSUCHELEMENTWITHTHISKEY = errors.New("No element with such key")
+var NOSUCHELEMENTWITHTHISKEY = errors.New("No Element with such key")
+var UNKNOWNERROR = errors.New("I don't know this command")
 
 const idleTimeout = time.Duration(2) //minutes
 
 type server struct {
 	commands chan Command
 	mutex    sync.Mutex
-	hashMap  map[string]string
+	hashMap  map[string]Element
 }
 
 func newServer() *server {
-	return &server{
+	s := &server{
 		commands: make(chan Command),
 		mutex:    sync.Mutex{},
-		hashMap:  make(map[string]string),
+		hashMap:  make(map[string]Element),
 	}
+	return s
 }
 
 func (s *server) handleClientRequest(conn *net.Conn) {
@@ -67,7 +70,7 @@ func (s *server) handleRequest(conn net.Conn) {
 
 func (s *server) get(commandArgs *[]string, c *client) {
 	if err := validateArgs(CMD_GET_ARGS_NUM, *commandArgs); err != nil {
-		c.err(INCORRECTARGSQUANTITY.Error())
+		c.err(&INCORRECTARGSQUANTITY)
 		return
 	}
 	s.mutex.Lock()
@@ -75,27 +78,32 @@ func (s *server) get(commandArgs *[]string, c *client) {
 	s.mutex.Unlock()
 
 	if ok {
-		c.write(element)
+		c.write(element.data)
 	} else {
-		c.err(NOSUCHELEMENTWITHTHISKEY.Error())
+		c.err(&NOSUCHELEMENTWITHTHISKEY)
 	}
 }
 
 func (s *server) set(commandArgs *[]string, c *client) {
 	if err := validateArgs(CMD_SET_ARGS_NUM, *commandArgs); err != nil {
-		c.err(INCORRECTARGSQUANTITY.Error())
+		c.err(&INCORRECTARGSQUANTITY)
 		return
 	}
+
 	s.mutex.Lock()
-	s.hashMap[(*commandArgs)[0]] = (*commandArgs)[1]
+	s.hashMap[(*commandArgs)[0]] = Element{
+		mutex: &sync.Mutex{},
+		data:  &(*commandArgs)[1],
+	}
 	s.mutex.Unlock()
 
-	c.write((*commandArgs)[1])
+Save("/home/ikripaka/go/src/github.com/ikripaka/learning-golang/kv-store/data.json", s, s.hashMap)
+	c.write(&(*commandArgs)[1])
 }
 
 func (s *server) getset(commandArgs *[]string, c *client) {
 	if err := validateArgs(CMD_GETSET_ARGS_NUM, *commandArgs); err != nil {
-		c.err(INCORRECTARGSQUANTITY.Error())
+		c.err(&INCORRECTARGSQUANTITY)
 		return
 	}
 
@@ -104,30 +112,33 @@ func (s *server) getset(commandArgs *[]string, c *client) {
 	s.mutex.Unlock()
 
 	if ok {
-		s.mutex.Lock()
-		s.hashMap[(*commandArgs)[0]] = (*commandArgs)[1]
-		s.mutex.Unlock()
+		s.hashMap[(*commandArgs)[0]].mutex.Lock()
+		v, _ := s.hashMap[(*commandArgs)[0]]
+		v.data = &(*commandArgs)[1]
+		s.hashMap[(*commandArgs)[0]].mutex.Unlock()
 
-		c.write(oldElement)
+		c.write(oldElement.data)
 	} else {
-		c.err(NOSUCHELEMENTWITHTHISKEY.Error())
+		c.err(&NOSUCHELEMENTWITHTHISKEY)
 		s.set(commandArgs, c)
 	}
 }
 
 func (s *server) exists(commandArgs *[]string, c *client) {
 	if err := validateArgs(CMD_EXISTS_ARGS_NUM, *commandArgs); err != nil {
-		c.err(INCORRECTARGSQUANTITY.Error())
+		c.err(&INCORRECTARGSQUANTITY)
 		return
 	}
+	// lock all hash map
 	s.mutex.Lock()
 	_, ok := s.hashMap[(*commandArgs)[0]]
 	s.mutex.Unlock()
 
+	formattedBool := strconv.FormatBool(ok)
 	if ok {
-		c.write("true")
+		c.write(&formattedBool)
 	} else {
-		c.write("false")
+		c.write(&formattedBool)
 	}
 }
 

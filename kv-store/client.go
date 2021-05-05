@@ -49,15 +49,15 @@ func (c *client) readUserInput() {
 				client: c,
 			}
 		default:
-			c.err("I don't know this command")
+			c.err(&err)
 		}
 
 	}
 }
 
-func (c *client) write(message string) {
-	(*c.conn).Write([]byte(message + "\n"))
+func (c *client) write(message *string) {
+	(*c.conn).Write([]byte(*message + "\n"))
 }
-func (c *client) err(message string) {
-	(*c.conn).Write([]byte("> " + message + "\n"))
+func (c *client) err(err *error) {
+	(*c.conn).Write([]byte("> " + (*err).Error() + "\n"))
 }
