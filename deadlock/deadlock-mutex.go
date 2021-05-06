@@ -14,21 +14,6 @@ var fuelMutex sync.Mutex
 var waterMutex sync.Mutex
 var waitGroup sync.WaitGroup
 
-func main() {
-
-	fmt.Printf("Arrays before fuel: %d, water: %d\n", fuel, water)
-
-	waitGroup.Add(10)
-	for i := 0; i < 10; i++ {
-		//go addition1(i,  &waitGroup)
-		//go addition2(i, &waitGroup)
-		go addition3(i, &waitGroup)
-	}
-
-	waitGroup.Wait()
-	fmt.Printf("All is done! Water: %d, Fuel: %d", water, fuel)
-}
-
 //Situation with deadlock
 func addition3(processCount int, waitGroup *sync.WaitGroup) {
 	if rand.Int()%2 == 0 {
