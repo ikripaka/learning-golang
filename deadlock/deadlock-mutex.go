@@ -12,7 +12,7 @@ var water int32 = 125
 
 var fuelMutex sync.Mutex
 var waterMutex sync.Mutex
-var waitGroup sync.WaitGroup
+
 
 //Situation with deadlock
 func addition3(processCount int, waitGroup *sync.WaitGroup) {
